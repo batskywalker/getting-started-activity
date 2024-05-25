@@ -4,6 +4,7 @@ import './style.css'
 import rocketLogo from '/rocket.png'
 
 let auth;
+
 const discordSdk = new DiscordSDK(import.meta.env.VITE_DISCORD_CLIENT_ID);
 
 setupDiscordSdk().then(() => {
@@ -34,11 +35,14 @@ async function setupDiscordSdk() {
       code,
     }),
   });
+
   const {access_token} = await response.json();
 
   auth = await discordSdk.commands.authenticate({
     access_token,
   });
+
+  
 
   if (auth == null) {
     throw new Error("Authenticate command failed");
@@ -48,6 +52,31 @@ async function setupDiscordSdk() {
 document.querySelector('#app').innerHTML = `
   <div>
     <img src="${rocketLogo}" class="logo" alt="Discord" />
-    <h1>Hello, World!</h1>
+    <h1 id='header'></h1>
   </div>
 `;
+
+const {code} = discordSdk.commands.authorize({
+  client_id: import.meta.env.VITE_DISCORD_CLIENT_ID,
+  response_type: "code",
+  state: "",
+  prompt: "none",
+  scope: [
+    "identify",
+    "guilds",
+  ],
+});
+
+const res = await fetch("/api/token", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    code,
+  }),
+});
+
+const {access_token} = res.json();
+
+document.querySelector('#header').textContent = access_token;
